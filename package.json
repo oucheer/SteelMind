@@ -1,0 +1,15 @@
+{
+  "name": "steel-furniture-platform",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install:all": "cd server && npm install && cd ../client && npm install",
+    "seed": "cd server && node src/db/seed.js",
+    "dev": "concurrently -n server,client -c blue,green \"node server/src/index.js\" \"cd client && node node_modules/vite/bin/vite.js --port 5173\"",
+    "dev:server": "cd server && node src/index.js",
+    "dev:client": "cd client && npx vite --port 5173"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

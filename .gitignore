@@ -1,0 +1,10 @@
+node_modules/
+server/data/
+*.db
+*.db-wal
+*.db-shm
+.env
+.debug/
+.npm-cache/
+.workbuddy/
+vite.config.js.timestamp-*.mjs
