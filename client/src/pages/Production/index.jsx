@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Card, Tabs, Table, Tag, Space, Select, Button, App, Modal, Input, Steps, Statistic, Row, Col, DatePicker, Tooltip, Typography, Form } from 'antd';
-import { ReloadOutlined, EyeOutlined, NotificationOutlined, WarningOutlined } from '@ant-design/icons';
+import { Card, Tabs, Table, Tag, Space, Select, Button, App, Modal, Input, Steps, Statistic, Row, Col, DatePicker, Tooltip, Typography, Form, Checkbox } from 'antd';
+import { ReloadOutlined, EyeOutlined, NotificationOutlined, WarningOutlined, DownloadOutlined } from '@ant-design/icons';
 import { api } from '../../api';
 import StatusTag from '../../components/StatusTag';
 import dayjs from 'dayjs';
@@ -8,6 +8,18 @@ import dayjs from 'dayjs';
 const { Text } = Typography;
 
 const FLOW = ['待确认', '待排产', '已排产', '生产中', '待质检', '待发货', '已发货', '已完成'];
+
+// CSV 导出（带 BOM，Excel 直接打开不乱码）
+function exportCSV(filename, columns, rows) {
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const csv = [columns.map((c) => esc(c.title)).join(','), ...rows.map((r) => columns.map((c) => esc(typeof c.export === 'function' ? c.export(r) : r[c.dataIndex])).join(','))].join('\r\n');
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 export default function Production() {
   const [users, setUsers] = useState([]);
@@ -129,6 +141,8 @@ export default function Production() {
     }
   };
 
+  const [onlyUrgent, setOnlyUrgent] = useState(false);
+
   const stats = useMemo(() => {
     const s = { pending: 0, producing: 0, urgent: 0, total: summary.length };
     summary.forEach((g) => {
@@ -140,13 +154,29 @@ export default function Production() {
     return s;
   }, [summary]);
 
+  // 今日报货统计（参考站每日报货页设计）
+  const todayStats = useMemo(() => {
+    const today = dayjs().format('YYYY-MM-DD');
+    const todayRows = requisitions.filter((r) => (r.created_at || '').slice(0, 10) === today);
+    return {
+      reported: todayRows.reduce((s, r) => s + (r.qty || 0), 0),
+      count: todayRows.length,
+      plannedQty: summary.filter((g) => !['已发货', '已完成'].includes(g.status)).reduce((s, g) => s + (g.total_qty || 0), 0),
+    };
+  }, [requisitions, summary]);
+
+  const urgentSummary = useMemo(() => summary.filter((g) => urgent(g.earliest_delivery) <= 3 && !['已发货', '已完成'].includes(g.status)), [summary]);
+  const urgentSchedule = useMemo(() => schedule.filter((g) => urgent(g.plan_end) <= 3 && !['已发货', '已完成'].includes(g.status)), [schedule]);
+
   return (
     <div>
       <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col span={6}><Card size="small"><Statistic title="待排产任务" value={stats.pending} suffix=" 组" /></Card></Col>
-        <Col span={6}><Card size="small"><Statistic title="生产中任务" value={stats.producing} suffix=" 组" /></Card></Col>
-        <Col span={6}><Card size="small"><Statistic title="交期紧急" value={stats.urgent} suffix=" 组" valueStyle={{ color: stats.urgent ? '#fa541c' : undefined }} /></Card></Col>
-        <Col span={6}><Card size="small"><Statistic title="生产组总数" value={stats.total} suffix=" 组" /></Card></Col>
+        <Col span={4}><Card size="small"><Statistic title="待排产任务" value={stats.pending} suffix=" 组" /></Card></Col>
+        <Col span={4}><Card size="small"><Statistic title="生产中任务" value={stats.producing} suffix=" 组" /></Card></Col>
+        <Col span={4}><Card size="small"><Statistic title="交期紧急" value={stats.urgent} suffix=" 组" valueStyle={{ color: stats.urgent ? '#fa541c' : undefined }} /></Card></Col>
+        <Col span={4}><Card size="small"><Statistic title="生产组总数" value={stats.total} suffix=" 组" /></Card></Col>
+        <Col span={4}><Card size="small"><Statistic title="今日已报货" value={todayStats.reported} suffix=" 件" extra={`${todayStats.count} 笔`} /></Card></Col>
+        <Col span={4}><Card size="small"><Statistic title="在产/待产总量" value={todayStats.plannedQty} suffix=" 件" /></Card></Col>
       </Row>
       <Card variant="outlined">
         <Tabs items={[
@@ -158,6 +188,16 @@ export default function Production() {
                     options={users.filter((u) => ['c_agent', 'b_agent'].includes(u.role)).map((u) => ({ value: u.id, label: u.real_name }))} />
                   <Select allowClear placeholder="明细状态" style={{ width: 120 }} onChange={(v) => setReqFilter((f) => ({ ...f, status: v }))}
                     options={['待报货', '已报货', '生产中', '已入库', '已发货'].map((v) => ({ value: v, label: v }))} />
+                  <Button size="small" icon={<DownloadOutlined />}
+                    onClick={() => exportCSV(`报货明细_${dayjs().format('YYYYMMDD')}.csv`, [
+                      { title: '报货日期', export: (r) => (r.created_at || '').slice(0, 10) },
+                      { title: '业务员', dataIndex: 'sales_name' }, { title: '客户', dataIndex: 'customer_name' },
+                      { title: '订单号', dataIndex: 'order_no' },
+                      { title: '产品', export: (r) => `${r.product_name || ''} ${r.model || ''}` },
+                      { title: '数量', dataIndex: 'qty' }, { title: '颜色', dataIndex: 'color' },
+                      { title: '规格', dataIndex: 'spec' }, { title: '定制参数', dataIndex: 'custom_params' },
+                      { title: '要求交期', dataIndex: 'expected_delivery' }, { title: '明细状态', dataIndex: 'status' },
+                    ], requisitions)}>导出 CSV</Button>
                 </Space>
                 <Table size="small" rowKey="id" dataSource={requisitions} pagination={{ pageSize: 15 }} columns={reqColumns} scroll={{ x: 1200 }} />
               </>
@@ -166,17 +206,42 @@ export default function Production() {
           {
             key: 'summary', label: '产品汇总', children: (
               <>
+                <Space style={{ marginBottom: 8 }} wrap>
+                  <Checkbox checked={onlyUrgent} onChange={(e) => setOnlyUrgent(e.target.checked)}>仅看急单（3天内交期）</Checkbox>
+                  <Button size="small" icon={<DownloadOutlined />}
+                    onClick={() => exportCSV(`产品汇总_${dayjs().format('YYYYMMDD')}.csv`, [
+                      { title: '产品', export: (r) => `${r.product_name || ''} ${r.model || ''}` },
+                      { title: '颜色', dataIndex: 'color' }, { title: '规格', dataIndex: 'spec' },
+                      { title: '定制参数', dataIndex: 'custom_params' }, { title: '汇总数量', dataIndex: 'total_qty' },
+                      { title: '来源明细数', dataIndex: 'source_item_count' }, { title: '最早交期', dataIndex: 'earliest_delivery' },
+                      { title: '生产状态', dataIndex: 'status' }, { title: '进度%', dataIndex: 'progress_pct' },
+                    ], onlyUrgent ? urgentSummary : summary)}>导出 CSV</Button>
+                </Space>
                 <div style={{ marginBottom: 8 }}>
                   <Text type="secondary">按「产品型号 + 颜色 + 规格 + 定制参数」归一化分组合并数量；只有生产条件完全一致的明细才会合并，且每组可追溯来源订单和业务员。</Text>
                 </div>
-                <Table size="small" rowKey="id" dataSource={summary} pagination={{ pageSize: 15 }} columns={sumColumns} scroll={{ x: 1100 }}
+                <Table size="small" rowKey="id" dataSource={onlyUrgent ? urgentSummary : summary} pagination={{ pageSize: 15 }} columns={sumColumns} scroll={{ x: 1100 }}
                   rowClassName={(r) => (urgent(r.earliest_delivery) <= 3 && !['已发货', '已完成'].includes(r.status)) ? 'row-urgent' : ''} />
               </>
             ),
           },
           {
             key: 'schedule', label: '生产进度计划', children: (
-              <Table size="small" rowKey="id" dataSource={schedule} pagination={{ pageSize: 12 }} columns={schedColumns} scroll={{ x: 1200 }} />
+              <>
+                <Space style={{ marginBottom: 8 }} wrap>
+                  <Checkbox checked={onlyUrgent} onChange={(e) => setOnlyUrgent(e.target.checked)}>仅看急单（3天内交期）</Checkbox>
+                  <Button size="small" icon={<DownloadOutlined />}
+                    onClick={() => exportCSV(`生产计划_${dayjs().format('YYYYMMDD')}.csv`, [
+                      { title: '任务ID', export: (r) => '#' + r.id.slice(0, 6) },
+                      { title: '产品', export: (r) => `${r.product_name || ''} ${r.model || ''}` },
+                      { title: '颜色/规格', export: (r) => `${r.color} · ${r.spec}` },
+                      { title: '数量', dataIndex: 'total_qty' }, { title: '计划开始', dataIndex: 'plan_start' },
+                      { title: '计划完成', dataIndex: 'plan_end' }, { title: '车间', dataIndex: 'workshop' },
+                      { title: '当前状态', dataIndex: 'status' }, { title: '进度%', dataIndex: 'progress_pct' },
+                    ], onlyUrgent ? urgentSchedule : schedule)}>导出 CSV</Button>
+                </Space>
+                <Table size="small" rowKey="id" dataSource={onlyUrgent ? urgentSchedule : schedule} pagination={{ pageSize: 12 }} columns={schedColumns} scroll={{ x: 1200 }} />
+              </>
             ),
           },
         ]} />
