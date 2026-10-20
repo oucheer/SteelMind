@@ -21,6 +21,11 @@ export default defineConfig({
           });
         },
       },
+      // AI 生成的媒体文件（口播音频/视频）
+      '/files': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
     },
   },
 });
