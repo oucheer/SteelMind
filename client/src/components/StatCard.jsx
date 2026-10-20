@@ -1,7 +1,7 @@
 import { Card, Statistic } from 'antd';
 import { ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 
-export default function StatCard({ title, value, precision, prefix, suffix, change, icon, color = '#1677ff' }) {
+export default function StatCard({ title, value, precision, prefix, suffix, change, icon, color = '#0d3027' }) {
   const up = change != null && change >= 0;
   return (
     <Card variant="outlined" styles={{ body: { padding: '16px 20px' } }}>

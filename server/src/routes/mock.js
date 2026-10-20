@@ -56,4 +56,36 @@ router.post('/wechat/send', (req, res) => {
   res.json({ ok: true, message: `已向 ${to_user_ids?.length || 0} 位用户发送模拟通知`, channel: '企业微信(mock)' });
 });
 
+// 模拟电商平台买家消息到达（淘宝/天猫）：匹配/创建客户与会话，插入买家消息
+router.post('/platform/receive-message', (req, res) => {
+  const { channel = '淘宝', buyer_name, phone, content } = req.body || {};
+  if (!buyer_name || !content?.trim()) return res.status(400).json({ error: '买家称呼与消息内容不能为空' });
+  if (!['淘宝', '天猫'].includes(channel)) return res.status(400).json({ error: '渠道仅支持 淘宝/天猫' });
+  // 按手机号优先匹配客户，其次按名字
+  let customer = phone
+    ? db.prepare(`SELECT * FROM customers WHERE phone=? LIMIT 1`).get(phone)
+    : db.prepare(`SELECT * FROM customers WHERE name=? LIMIT 1`).get(buyer_name);
+  if (!customer) {
+    const cid = uuid();
+    db.prepare(`INSERT INTO customers (id,name,type,platform,phone,level,owner_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)`)
+      .run(cid, buyer_name, 'c端', channel, phone || null, '普通', req.user?.id || null, ts(), ts());
+    customer = db.prepare(`SELECT * FROM customers WHERE id=?`).get(cid);
+  }
+  // 同客户同渠道复用最近会话（24h内），否则新建
+  let conv = db.prepare(`SELECT * FROM ai_conversations WHERE customer_id=? AND channel=? ORDER BY last_msg_at DESC LIMIT 1`).get(customer.id, channel);
+  const isNew = !conv || dayjs().diff(dayjs(conv.last_msg_at), 'hour', true) > 24;
+  if (isNew) {
+    const id = uuid();
+    db.prepare(`INSERT INTO ai_conversations (id,customer_id,channel,type,user_id,status,last_msg_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)`)
+      .run(id, customer.id, channel, '客服', req.user?.id || null, '待回复', ts(), ts(), ts());
+    conv = db.prepare(`SELECT * FROM ai_conversations WHERE id=?`).get(id);
+  }
+  const mid = uuid();
+  db.prepare(`INSERT INTO ai_messages (id,conversation_id,role,content,meta_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?)`)
+    .run(mid, conv.id, 'user', content.trim(), JSON.stringify({ platform: channel, buyer: buyer_name, from_platform: true }), ts(), ts());
+  db.prepare(`UPDATE ai_conversations SET status='待回复', last_msg_at=?, updated_at=? WHERE id=?`).run(ts(), ts(), conv.id);
+  audit(req, '平台消息接收(模拟)', 'conversation', conv.id, null, { channel, buyer: buyer_name });
+  res.json({ conversation_id: conv.id, customer_id: customer.id, customer_name: customer.name, channel, message_id: mid, is_new_conversation: isNew });
+});
+
 module.exports = router;

@@ -132,7 +132,7 @@ export default function BDesign() {
                 {(analysis.risks || []).map((r, i) => <div key={i} style={{ color: '#fa541c', fontSize: 12 }}>· {r}</div>)}
               </Descriptions.Item>
               <Descriptions.Item label="待确认问题" span={1}>
-                {(analysis.confirm_questions || []).map((q, i) => <div key={i} style={{ color: '#1677ff', fontSize: 12 }}>？{q}</div>)}
+                {(analysis.confirm_questions || []).map((q, i) => <div key={i} style={{ color: '#0d3027', fontSize: 12 }}>？{q}</div>)}
               </Descriptions.Item>
             </Descriptions>
           ) : <Text type="secondary">点击「AI 需求分析」生成空间分析、推荐配置、风险与待确认问题清单</Text>}

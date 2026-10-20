@@ -118,12 +118,12 @@ export default function Marketing() {
                     </div>
                   )}
                   {m.type === 'image' && (
-                    <div style={{ height: 90, borderRadius: 6, background: 'linear-gradient(135deg,#e8f1ff,#f0f5ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, color: '#1677ff' }}>
+                    <div style={{ height: 90, borderRadius: 6, background: 'linear-gradient(135deg,#e8f1ff,#f0f5ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, color: '#0d3027' }}>
                       {typeIcon.image}
                     </div>
                   )}
                   <div style={{ marginTop: 8, fontWeight: 500, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ color: '#1677ff' }}>{typeIcon[m.type]}</span>
+                    <span style={{ color: '#0d3027' }}>{typeIcon[m.type]}</span>
                     <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</span>
                   </div>
                   <Space size={4} wrap style={{ marginTop: 6 }}>
@@ -248,7 +248,7 @@ export default function Marketing() {
         {videoLoading && (
           <Card size="small">
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <VideoCameraOutlined style={{ fontSize: 42, color: '#1677ff' }} />
+              <VideoCameraOutlined style={{ fontSize: 42, color: '#0d3027' }} />
               <div style={{ marginTop: 12, fontWeight: 600 }}>正在生成视频…</div>
               <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>AI 分镜 → 口播配音 → 字幕对齐 → 合成渲染</div>
             </div>

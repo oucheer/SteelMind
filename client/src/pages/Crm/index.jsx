@@ -95,7 +95,7 @@ export default function Crm() {
             children: (<div style={{ fontSize: 12 }}>
               <div>{f.content}</div>
               <Space size={6}><Tag>{f.type}</Tag><Text type="secondary">{f.user_name} · {f.created_at?.slice(0, 16)}</Text></Space>
-              {f.next_plan && <div style={{ color: '#1677ff' }}>下次计划：{f.next_plan} {f.next_time || ''}</div>}
+              {f.next_plan && <div style={{ color: '#0d3027' }}>下次计划：{f.next_plan} {f.next_time || ''}</div>}
             </div>),
           }))} />
         </>)}

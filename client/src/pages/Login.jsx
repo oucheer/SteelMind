@@ -28,7 +28,7 @@ export default function Login() {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg,#1f2533 0%,#2b3a55 100%)' }}>
       <Card style={{ width: 400, borderRadius: 12, boxShadow: '0 8px 30px rgba(0,0,0,0.25)' }}>
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
-          <div style={{ width: 52, height: 52, borderRadius: 12, background: '#1677ff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 26, fontWeight: 700 }}>钢</div>
+          <div style={{ width: 52, height: 52, borderRadius: 12, background: '#0d3027', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 26, fontWeight: 700 }}>钢</div>
           <Typography.Title level={4} style={{ marginTop: 12, marginBottom: 2 }}>钢制家具销售与生产协同平台</Typography.Title>
           <Typography.Text type="secondary">AI 驱动的销售运营与生产协同系统</Typography.Text>
         </div>

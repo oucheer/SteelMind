@@ -24,12 +24,12 @@ export default function Dashboard() {
     api.get('/dashboard/production-progress').then(setProd);
   }, []);
 
-  const sourceColors = ['#1677ff', '#52c41a', '#faad14', '#722ed1', '#13c2c2', '#eb2f96'];
+  const sourceColors = ['#0d3027', '#52c41a', '#faad14', '#722ed1', '#13c2c2', '#eb2f96'];
 
   return (
     <div>
       {/* Banner */}
-      <Card style={{ marginBottom: 16, background: 'linear-gradient(90deg,#1677ff 0%,#4a9eff 60%,#69b1ff 100%)', border: 'none' }}
+      <Card style={{ marginBottom: 16, background: 'linear-gradient(100deg,#0d3027 0%,#1a5c48 55%,#2f6b57 100%)', border: 'none' }}
         styles={{ body: { padding: '22px 28px', color: '#fff' } }}>
         <Title level={3} style={{ color: '#fff', margin: 0 }}>AI 让钢制家具业务更简单</Title>
         <div style={{ opacity: 0.9, marginTop: 4 }}>从获客到交付，全链路智能协同：运营智能化 · 销售智能化 · 订单自动化 · 生产协同化 · 经营可视化</div>
@@ -42,7 +42,7 @@ export default function Dashboard() {
 
       {/* 指标卡 */}
       <Row gutter={[16, 16]}>
-        <Col xs={12} lg={6}><StatCard title="设备销售额 (今日)" value={summary?.sales_today ?? 0} prefix="¥" change={summary?.sales_change} icon={<DollarOutlined />} color="#1677ff" /></Col>
+        <Col xs={12} lg={6}><StatCard title="设备销售额 (今日)" value={summary?.sales_today ?? 0} prefix="¥" change={summary?.sales_change} icon={<DollarOutlined />} color="#0d3027" /></Col>
         <Col xs={12} lg={6}><StatCard title="订单数量 (今日)" value={summary?.orders_today ?? 0} change={summary?.orders_change} icon={<ShoppingCartOutlined />} color="#52c41a" /></Col>
         <Col xs={12} lg={6}><StatCard title="待生产订单" value={summary?.pending_orders ?? 0} icon={<ClockCircleOutlined />} color="#faad14" /></Col>
         <Col xs={12} lg={6}><StatCard title="生产完成率" value={summary?.production_rate ?? 0} suffix="%" icon={<CheckCircleOutlined />} color="#722ed1" /></Col>

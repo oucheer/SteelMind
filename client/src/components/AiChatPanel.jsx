@@ -39,15 +39,15 @@ export default function AiChatPanel({ mode = 'sales_assistant', conversationId, 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height }}>
-      {title && <div style={{ fontWeight: 600, marginBottom: 8 }}><RobotOutlined style={{ color: '#1677ff' }} /> {title}</div>}
+      {title && <div style={{ fontWeight: 600, marginBottom: 8 }}><RobotOutlined style={{ color: '#0d3027' }} /> {title}</div>}
       <div ref={boxRef} style={{ flex: 1, overflowY: 'auto', background: '#f7f8fa', borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {messages.map((m, i) => (
           <div key={i} style={{ display: 'flex', gap: 8, flexDirection: m.role === 'user' ? 'row-reverse' : 'row' }}>
-            <Avatar size={28} style={{ background: m.role === 'user' ? '#1677ff' : '#8c8c8c', flexShrink: 0 }}
+            <Avatar size={28} style={{ background: m.role === 'user' ? '#0d3027' : '#8c8c8c', flexShrink: 0 }}
               icon={m.role === 'user' ? <UserOutlined /> : <RobotOutlined />} />
             <div style={{
               maxWidth: '82%', padding: '8px 12px', borderRadius: 10, whiteSpace: 'pre-wrap', fontSize: 13, lineHeight: 1.6,
-              background: m.role === 'user' ? '#1677ff' : '#fff', color: m.role === 'user' ? '#fff' : '#1f2329',
+              background: m.role === 'user' ? '#0d3027' : '#fff', color: m.role === 'user' ? '#fff' : '#1f2329',
               boxShadow: '0 1px 2px rgba(0,0,0,0.06)', border: m.role === 'user' ? 'none' : '1px solid #eef0f3',
             }}>
               {m.content || <span style={{ color: '#999' }}>正在思考…</span>}

@@ -93,7 +93,7 @@ export default function MainLayout() {
                   return (
                     <div key={opt.key} onClick={() => { nav(path); setKw(''); }}
                       style={{ padding: '6px 12px', cursor: 'pointer', fontSize: 13 }}
-                      onMouseEnter={(e) => e.target.style.background = '#f5f6f8'}
+                      onMouseEnter={(e) => e.target.style.background = '#f4f7f6'}
                       onMouseLeave={(e) => e.target.style.background = 'transparent'}>
                       {opt.label}
                     </div>
@@ -112,11 +112,11 @@ export default function MainLayout() {
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
       {/* 固定侧边栏：不随内容滚动，菜单过长时自身滚动 */}
-      <Sider width={210} style={{ background: '#1f2533', height: '100vh', position: 'fixed', inset: '0 auto 0 0', zIndex: 100, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <Sider width={210} style={{ background: '#0d3027', height: '100vh', position: 'fixed', inset: '0 auto 0 0', zIndex: 100, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '18px 16px', flexShrink: 0 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 8, background: '#1677ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700 }}>钢</div>
+          <div style={{ width: 36, height: 36, borderRadius: 8, background: '#2f6b57', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700 }}>钢</div>
           <div>
-            <div style={{ color: '#fff', fontWeight: 600, fontSize: 13, lineHeight: 1.3 }}>钢制家具销售与生产<br />协同智能化平台</div>
+            <div style={{ color: '#fff', fontWeight: 600, fontSize: 13, lineHeight: 1.3 }}>SteelMind<br />远川钢制家具</div>
           </div>
         </div>
         <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -127,7 +127,7 @@ export default function MainLayout() {
           />
         </div>
         <div style={{ flexShrink: 0, padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Avatar size={32} style={{ background: '#1677ff' }}>{(user.real_name || '客')[0]}</Avatar>
+          <Avatar size={32} style={{ background: '#0d3027' }}>{(user.real_name || '客')[0]}</Avatar>
           <div>
             <div style={{ color: '#fff', fontSize: 12 }}>{user.real_name}</div>
             <Text style={{ color: '#8c93a3', fontSize: 11 }}>{user.username}</Text>
@@ -139,7 +139,7 @@ export default function MainLayout() {
       <div style={{ flex: 1, marginLeft: 210, height: '100vh', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
         <Header style={{
           background: '#fff', padding: '0 24px', display: 'flex', alignItems: 'center', gap: 16,
-          borderBottom: '1px solid #eef0f3', height: 52, flexShrink: 0,
+          borderBottom: '1px solid #dce3df', height: 52, flexShrink: 0,
           position: 'sticky', top: 0, zIndex: 99,
         }}>
           <Badge status="processing" text={<Text strong style={{ fontSize: 13 }}>{workspace}</Text>} />
@@ -149,13 +149,13 @@ export default function MainLayout() {
               ref={searchRef} allowClear prefix={<SearchOutlined style={{ color: '#999' }} />}
               placeholder="搜索客户、订单号、产品型号（Ctrl+K）" value={kw}
               onChange={(e) => setKw(e.target.value)} loading={searching}
-              style={{ width: 300, borderRadius: 18, background: '#f5f6f8' }}
+              style={{ width: 300, borderRadius: 18, background: '#f4f7f6' }}
             />
           </Popover>
           <Text type="secondary" style={{ fontSize: 12 }}>运营 · 销售 · 生产 · 售后 智能协同</Text>
-          <Avatar style={{ background: '#1677ff' }} size={30}>{(user.real_name || '客')[0]}</Avatar>
+          <Avatar style={{ background: '#0d3027' }} size={30}>{(user.real_name || '客')[0]}</Avatar>
         </Header>
-        <Content style={{ margin: 16, background: '#f5f6f8', flexShrink: 0 }}>
+        <Content style={{ margin: 16, background: '#f4f7f6', flexShrink: 0 }}>
           <Outlet />
         </Content>
       </div>

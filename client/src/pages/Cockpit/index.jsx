@@ -4,7 +4,7 @@ import { Pie, Column } from '@ant-design/charts';
 import { api } from '../../api';
 import StatusTag from '../../components/StatusTag';
 
-const COLORS = ['#1677ff', '#52c41a', '#faad14', '#722ed1', '#13c2c2', '#eb2f96', '#fa8c16', '#2f54eb'];
+const COLORS = ['#0d3027', '#52c41a', '#faad14', '#722ed1', '#13c2c2', '#eb2f96', '#fa8c16', '#2f54eb'];
 
 function PieCard({ title, data, nameKey = 'name', valKey = 'value' }) {
   return (
