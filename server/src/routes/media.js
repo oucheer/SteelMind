@@ -28,6 +28,12 @@ router.post('/voiceover', async (req, res) => {
     const id = uuid();
     const audioPath = path.join(MEDIA_DIR, `vo_${id}.mp3`);
     const { srt, duration } = await ttsToFile(script, audioPath, { voice, rate });
+    // 自动入库：口播音频+字幕+文案打包为一条音频素材
+    const ts = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    db.prepare(`INSERT INTO materials (id,title,type,url_or_content,tags,campaign,platform,product_id,status,uploader_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .run(id, `AI口播：${script.slice(0, 18)}…`, 'audio',
+        JSON.stringify({ audio_url: urlOf(audioPath), srt_url: urlOf(srt), script, duration: Math.round(duration * 10) / 10 }),
+        JSON.stringify(['口播', voice]), null, '通用', null, 'AI生成', req.user?.id || null, ts, ts);
     audit(req, 'AI 生成口播', 'material', id, null, { duration, chars: script.length });
     res.json({
       id, script, duration: Math.round(duration * 10) / 10,

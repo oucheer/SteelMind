@@ -167,7 +167,15 @@ router.post('/marketing-copy', async (req, res) => {
   const { platform, product, selling_points, style } = req.body || {};
   try {
     const result = await chat([{ role: 'user', content: marketingCopyPrompt({ platform, product, selling_points, style }) }], { json: true, temperature: 0.8 });
-    res.json(result);
+    // 自动入库：AI 文案直接进素材库（状态 AI生成，走审核流）
+    const mid = uuid();
+    const ts = dayjs().format('YYYY-MM-DD HH:mm:ss');
+    db.prepare(`INSERT INTO materials (id,title,type,url_or_content,tags,campaign,platform,product_id,status,uploader_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .run(mid, result.titles?.[0] || `AI 文案：${product || '通用'}`, 'copy',
+        `${(result.titles || []).join(' / ')}\n\n${result.body || ''}\n\n脚本：${result.video_script || ''}`,
+        JSON.stringify(result.hashtags || []), null, platform || '通用', null, 'AI生成', req.user?.id || null, ts, ts);
+    audit(req, 'AI 生成文案', 'material', mid, null, { product, platform });
+    res.json({ ...result, material_id: mid });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

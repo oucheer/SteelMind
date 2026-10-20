@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Card, Row, Col, Button, Input, Select, Form, Tabs, Tag, Empty, App, List, Space, Slider, Statistic, Typography } from 'antd';
-import { PictureOutlined, VideoCameraOutlined, FileTextOutlined, ThunderboltOutlined, PlusOutlined, AudioOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import { Card, Row, Col, Button, Input, Select, Form, Tabs, Tag, Empty, App, List, Space, Slider, Statistic, Typography, Popconfirm } from 'antd';
+import { PictureOutlined, VideoCameraOutlined, FileTextOutlined, ThunderboltOutlined, AudioOutlined, PlayCircleOutlined, DeleteOutlined } from '@ant-design/icons';
 import { api } from '../../api';
 import StatusTag from '../../components/StatusTag';
 
@@ -27,6 +27,13 @@ export default function Marketing() {
 
   const load = () => api.get('/materials', { params: filter }).then(setMaterials);
   useEffect(() => { load(); api.get('/admin/products').then(setProducts); api.get('/media/voices').then(setVoices).catch(() => {}); }, []);
+  useEffect(() => { load(); }, [filter]);
+
+  const removeMaterial = async (m) => {
+    await api.delete(`/materials/${m.id}`);
+    message.success('素材已删除（含生成文件）');
+    load();
+  };
 
   const generate = async (v) => {
     setGenLoading(true);
@@ -34,21 +41,10 @@ export default function Marketing() {
     try {
       const r = await api.post('/ai/marketing-copy', v);
       setGenResult(r);
-      message.success('文案生成完成');
+      message.success('文案生成完成，已自动存入素材库');
+      load();
     } catch (e) { message.error(e.message); }
     finally { setGenLoading(false); }
-  };
-
-  const saveCopy = async () => {
-    if (!genResult) return;
-    await api.post('/materials', {
-      title: genResult.titles?.[0] || 'AI 文案',
-      type: 'copy',
-      url_or_content: `${(genResult.titles || []).join(' / ')}\n\n${genResult.body || ''}\n\n脚本：${genResult.video_script || ''}`,
-      tags: genResult.hashtags || [], platform: form.getFieldValue('platform'), status: '待审核',
-    });
-    message.success('已保存到素材库（待审核）');
-    load();
   };
 
   const genVoiceover = async (v) => {
@@ -57,19 +53,10 @@ export default function Marketing() {
     try {
       const r = await api.post('/media/voiceover', { ...v, rate: `${v.rate >= 0 ? '+' : ''}${v.rate}%` });
       setVoResult(r);
-      message.success(`口播生成完成（${r.duration} 秒）`);
+      message.success(`口播生成完成（${r.duration} 秒），已自动存入素材库`);
+      load();
     } catch (e) { message.error(e.message); }
     finally { setVoLoading(false); }
-  };
-
-  const saveAudio = async () => {
-    if (!voResult) return;
-    await api.post('/materials', {
-      title: `AI口播：${voResult.script.slice(0, 18)}…`,
-      type: 'copy', url_or_content: `音频：${voResult.audio_url}\n文案：${voResult.script}`,
-      tags: ['口播'], platform: '通用', status: '待审核',
-    });
-    message.success('已存入素材库'); load();
   };
 
   const genVideo = async (v) => {
@@ -78,41 +65,77 @@ export default function Marketing() {
     try {
       const r = await api.post('/media/video', v);
       setVideoResult(r);
-      message.success('视频生成完成');
+      message.success('视频生成完成，已自动存入素材库');
       load();
     } catch (e) { message.error(e.message); }
     finally { setVideoLoading(false); }
   };
 
-  const typeIcon = { image: <PictureOutlined />, video: <VideoCameraOutlined />, copy: <FileTextOutlined /> };
+  const typeIcon = { image: <PictureOutlined />, video: <VideoCameraOutlined />, copy: <FileTextOutlined />, audio: <AudioOutlined /> };
+
+  const parseAudio = (m) => { try { return JSON.parse(m.url_or_content); } catch { return {}; } };
 
   const wall = (
     <>
       <Space style={{ marginBottom: 12 }} wrap>
         <Select allowClear placeholder="类型" style={{ width: 110 }} onChange={(v) => setFilter((f) => ({ ...f, type: v }))}
-          options={[{ value: 'image', label: '图片' }, { value: 'video', label: '视频' }, { value: 'copy', label: '文案' }]} />
+          options={[{ value: 'image', label: '图片' }, { value: 'video', label: '视频' }, { value: 'audio', label: '音频' }, { value: 'copy', label: '文案' }]} />
         <Select allowClear placeholder="状态" style={{ width: 110 }} onChange={(v) => setFilter((f) => ({ ...f, status: v }))}
           options={[{ value: 'AI生成', label: 'AI生成' }, { value: '待审核', label: '待审核' }, { value: '已确认', label: '已确认' }]} />
         <Input.Search allowClear placeholder="搜索素材标题" style={{ width: 220 }} onSearch={(v) => setFilter((f) => ({ ...f, keyword: v }))} />
+        <Text type="secondary" style={{ fontSize: 12 }}>所有 AI 生成的内容都会自动存入素材库，随时播放、下载或删除</Text>
       </Space>
-      {materials.length === 0 ? <Empty description="暂无素材" /> : (
+      {materials.length === 0 ? <Empty description="暂无素材，去 AI 文案/口播/视频 标签页生成吧" /> : (
         <Row gutter={[12, 12]}>
-          {materials.map((m) => (
-            <Col xs={12} md={8} xl={6} key={m.id}>
-              <Card size="small" variant="outlined" hoverable
-                actions={m.status !== '已确认' ? [<span key="ok" onClick={async () => { await api.put(`/materials/${m.id}`, { status: '已确认' }); message.success('已确认'); load(); }}>✓ 审核通过</span>] : undefined}>
-                <div style={{ height: 90, borderRadius: 6, background: 'linear-gradient(135deg,#e8f1ff,#f0f5ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, color: '#1677ff' }}>
-                  {typeIcon[m.type]}
-                </div>
-                <div style={{ marginTop: 8, fontWeight: 500, fontSize: 13 }}>{m.title}</div>
-                <Space size={4} wrap style={{ marginTop: 6 }}>
-                  <Tag color="blue">{m.platform || '通用'}</Tag>
-                  <StatusTag status={m.status} />
-                  {m.product_name && <Tag>{m.product_name}</Tag>}
-                </Space>
-              </Card>
-            </Col>
-          ))}
+          {materials.map((m) => {
+            const audio = m.type === 'audio' ? parseAudio(m) : null;
+            return (
+              <Col xs={24} md={12} xl={8} key={m.id}>
+                <Card size="small" variant="outlined" hoverable
+                  actions={m.status !== '已确认' ? [
+                    <span key="ok" onClick={async () => { await api.put(`/materials/${m.id}`, { status: '已确认' }); message.success('已审核通过'); load(); }}>✓ 审核通过</span>,
+                    <Popconfirm key="del" title="确定删除该素材？" description="生成文件将一并删除，不可恢复" okText="删除" okButtonProps={{ danger: true }} onConfirm={() => removeMaterial(m)}>
+                      <span style={{ color: '#ff4d4f' }}><DeleteOutlined /> 删除</span>
+                    </Popconfirm>,
+                  ] : [
+                    <Popconfirm key="del" title="确定删除该素材？" description="生成文件将一并删除，不可恢复" okText="删除" okButtonProps={{ danger: true }} onConfirm={() => removeMaterial(m)}>
+                      <span style={{ color: '#ff4d4f' }}><DeleteOutlined /> 删除</span>
+                    </Popconfirm>,
+                  ]}>
+                  {/* 类型内嵌预览 */}
+                  {m.type === 'video' && (
+                    <video controls preload="metadata" src={m.url_or_content} style={{ width: '100%', height: 170, background: '#000', borderRadius: 6 }} />
+                  )}
+                  {m.type === 'audio' && audio?.audio_url && (
+                    <div style={{ background: 'linear-gradient(135deg,#e8f1ff,#f0f5ff)', borderRadius: 6, padding: 10 }}>
+                      <audio controls preload="metadata" src={audio.audio_url} style={{ width: '100%' }} />
+                      <div style={{ fontSize: 12, color: '#666', marginTop: 6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{audio.script}</div>
+                    </div>
+                  )}
+                  {m.type === 'copy' && (
+                    <div style={{ height: 90, borderRadius: 6, background: '#f7f8fa', padding: 10, fontSize: 12, color: '#555', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden', whiteSpace: 'pre-wrap' }}>
+                      {m.url_or_content}
+                    </div>
+                  )}
+                  {m.type === 'image' && (
+                    <div style={{ height: 90, borderRadius: 6, background: 'linear-gradient(135deg,#e8f1ff,#f0f5ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, color: '#1677ff' }}>
+                      {typeIcon.image}
+                    </div>
+                  )}
+                  <div style={{ marginTop: 8, fontWeight: 500, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ color: '#1677ff' }}>{typeIcon[m.type]}</span>
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</span>
+                  </div>
+                  <Space size={4} wrap style={{ marginTop: 6 }}>
+                    <Tag color="blue">{m.platform || '通用'}</Tag>
+                    <StatusTag status={m.status} />
+                    {m.type === 'audio' && audio?.srt_url && <a href={audio.srt_url} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>SRT字幕</a>}
+                    {m.type === 'video' && <a href={m.url_or_content} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>原片</a>}
+                  </Space>
+                </Card>
+              </Col>
+            );
+          })}
         </Row>
       )}
     </>
@@ -143,7 +166,7 @@ export default function Marketing() {
       </Col>
       <Col xs={24} lg={14}>
         {genResult ? (
-          <Card size="small" title={<Space><span>生成结果</span><Tag color="orange">待审核</Tag></Space>} extra={<Button size="small" type="primary" onClick={saveCopy} icon={<PlusOutlined />}>存入素材库</Button>}>
+          <Card size="small" title={<Space><span>生成结果</span><Tag color="orange">已自动存入素材库</Tag></Space>}>
             <div style={{ fontWeight: 600, marginBottom: 8 }}>标题选项</div>
             <List size="small" dataSource={genResult.titles || []} renderItem={(t) => <List.Item>{t}</List.Item>} />
             <div style={{ fontWeight: 600, margin: '12px 0 4px' }}>正文</div>
@@ -152,7 +175,7 @@ export default function Marketing() {
               <div style={{ whiteSpace: 'pre-wrap', background: '#f7f8fa', padding: 12, borderRadius: 6, fontSize: 13 }}>{genResult.video_script}</div></>)}
             <Space wrap style={{ marginTop: 8 }}>{(genResult.hashtags || []).map((h) => <Tag key={h} color="blue">#{h}</Tag>)}</Space>
           </Card>
-        ) : <Empty description="填写左侧信息后点击生成" />}
+        ) : <Empty description="填写左侧信息后点击生成，结果自动存入素材库" />}
       </Col>
     </Row>
   );
@@ -178,13 +201,13 @@ export default function Marketing() {
             <Slider min={-30} max={30} step={5} marks={{ '-30': '-30%', 0: '标准', 30: '+30%' }} />
           </Form.Item>
           <Button type="primary" htmlType="submit" loading={voLoading} icon={<AudioOutlined />}>生成口播音频</Button>
-          <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>采用微软 Edge 神经网络语音（免费，同 MoneyPrinterTurbo 方案），生成后可直接试听。</Text>
+          <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>采用微软 Edge 神经网络语音（免费，同 MoneyPrinterTurbo 方案），生成后自动存入素材库。</Text>
         </Form>
       </Col>
       <Col xs={24} lg={14}>
         {voLoading && <Card size="small" loading style={{ minHeight: 240 }} />}
         {voResult ? (
-          <Card size="small" title="口播结果" extra={<Button size="small" onClick={saveAudio} icon={<PlusOutlined />}>存入素材库</Button>}>
+          <Card size="small" title={<Space>口播结果<Tag color="orange">已自动存入素材库</Tag></Space>}>
             <Row gutter={16} style={{ marginBottom: 12 }}>
               <Col span={8}><Statistic title="时长" value={voResult.duration} suffix="秒" /></Col>
               <Col span={8}><Statistic title="字数" value={voResult.script.length} suffix="字" /></Col>
@@ -197,7 +220,7 @@ export default function Marketing() {
               <Button size="small" href={voResult.srt_url} target="_blank">下载字幕 SRT</Button>
             </Space>
           </Card>
-        ) : (!voLoading && <Empty description="生成后可在此试听音频、下载字幕" />)}
+        ) : (!voLoading && <Empty description="生成后可在此试听，结果自动存入素材库" />)}
       </Col>
     </Row>
   );

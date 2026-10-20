@@ -1,8 +1,11 @@
 const router = require('express').Router();
+const fs = require('fs');
+const path = require('path');
 const { v4: uuid } = require('uuid');
 const dayjs = require('dayjs');
 const db = require('../db/database');
 const { audit } = require('../services/auditService');
+const { MEDIA_DIR } = require('../services/mediaService');
 
 router.get('/', (req, res) => {
   const { type, platform, status, keyword } = req.query;
@@ -39,11 +42,20 @@ router.put('/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+// 删除素材：连同生成的媒体文件（音频/视频/SRT）一起清理
 router.delete('/:id', (req, res) => {
   const m = db.prepare(`SELECT * FROM materials WHERE id=?`).get(req.params.id);
   if (m) audit(req, '删除素材', 'material', m.id, m, null);
   db.prepare(`DELETE FROM materials WHERE id=?`).run(req.params.id);
-  res.json({ ok: true });
+  // 收集关联的磁盘文件并清理
+  const files = [];
+  const collect = (u) => { if (typeof u === 'string' && u.startsWith('/files/media/')) files.push(path.basename(u)); };
+  collect(m.url_or_content);
+  if (m.type === 'audio') {
+    try { const j = JSON.parse(m.url_or_content || '{}'); collect(j.audio_url); collect(j.srt_url); } catch { /* 纯文本素材 */ }
+  }
+  for (const f of files) { try { fs.unlinkSync(path.join(MEDIA_DIR, f)); } catch { /* 文件不存在则忽略 */ } }
+  res.json({ ok: true, files_removed: files.length });
 });
 
 module.exports = router;
