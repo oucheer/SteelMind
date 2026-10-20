@@ -23,6 +23,10 @@ app.use('/api/shipments', require('./routes/shipments'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/mock', require('./routes/mock'));
+app.use('/api/media', require('./routes/media'));
+
+// AI 生成的媒体文件（口播音频/视频）
+app.use('/files/media', express.static(path.join(__dirname, '..', 'data', 'media')));
 
 app.get('/api/health', (req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 

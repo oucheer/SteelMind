@@ -8,3 +8,4 @@ server/data/
 .npm-cache/
 .workbuddy/
 vite.config.js.timestamp-*.mjs
+server/bin/
